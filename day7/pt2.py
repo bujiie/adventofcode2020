@@ -9,9 +9,6 @@ filename=sys.argv[1]
 bags = {}
 bags_cnt = {}
 
-def parse_bag_color(description):
-    return description.replace('bags', '').strip()
-
 with open(filename) as fp:
     for index, line in enumerate(fp):
         clean_line = line.replace('.', '').strip()
@@ -38,12 +35,9 @@ count = 0
 
 while queue:
     node = queue.pop(0)
+    count = count + node['qty'] * bags_cnt[node['color']]
+
     for inner_bag in bags[node['color']]:
-        count = count + node['qty'] * bags_cnt[node['color']]
-        print("color=",node['color'],"count=",count)
-        queue.append({'color': inner_bag['color'], 'qty':  node['qty'] * bags_cnt[node['color']]})
+        queue.append({'color': inner_bag['color'], 'qty':  node['qty'] * inner_bag['qty']})
 
 print(count)
-
-#       A .    A .       B .     A .  B .      C
-# (2 + 2*2) + (2*2)(2 + 2*2) + (2*2)(2*2)(2 + 2*2)
