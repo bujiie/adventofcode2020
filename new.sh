@@ -10,7 +10,7 @@ problem_input_file="problem.txt"
 mkdir $challenge_dir
 cp __template.py "${challenge_dir}/pt1.py"
 cd $challenge_dir
-chmod 755 main.py
+chmod 755 pt1.py
 
 mkdir $input_dir
 cd $input_dir
