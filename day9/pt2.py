@@ -30,10 +30,8 @@ def replace_in_string(search_me, for_this, replace_with):
     return re.sub(for_this, replace_with, search_me)
 
 
-
 filename=sys.argv[1]
 
-preamble_length = 25
 data = []
 
 with open(filename) as fp:
@@ -41,33 +39,33 @@ with open(filename) as fp:
         clean_line = int(clean(line))
         data.append(clean_line)
 
-target = 1504371145
-# target = 127
+target = 1504371145 # replace with 127 for sample input
 
-ptr = 0
-length = 2
+index = 0
+offset = 2
 
 while True:
-    if ptr > len(data) - 1:
+    if index > len(data) - 1:
         break
-    range_sum = sum(data[ptr:length + ptr])
 
-    if range_sum < target:
-        if length != len(data):
-            length += 1
+    candidate_sum = sum(data[index:index+offset])
+
+    if candidate_sum < target:
+        if offset != len(data):
+            offset += 1
         else:
-            ptr += 1
-            length = 2
-    elif range_sum > target:
-        if ptr == len(data) - 1:
+            index += 1
+            offset = 2
+    elif candidate_sum > target:
+        if index == len(data) - 1:
             print("no more pointers")
             break
         else:
-            ptr += 1
-            length = 2
+            index += 1
+            offset = 2
     else:
-        c_range = data[ptr:length+ptr]
-        print(min(c_range) + max(c_range))
+        target_range = data[index:index+offset]
+        print(min(target_range) + max(target_range))
         break
 
 
