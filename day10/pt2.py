@@ -3,6 +3,7 @@
 import sys
 import re
 import itertools
+import functools
 
 def clean(string):
     return string.strip()
@@ -30,12 +31,6 @@ def parse_from_string(regex, string):
 def replace_in_string(search_me, for_this, replace_with):
     return re.sub(for_this, replace_with, search_me)
 
-def remove_items(test_list, item):
-    res = [i for i in test_list if i != item]
-    return res
-
-def diff(li1, li2):
-    return (list(list(set(li1)-set(li2)) + list(set(li2)-set(li1))))
 
 
 filename=sys.argv[1]
@@ -45,28 +40,48 @@ with open(filename) as fp:
     for index, line in enumerate(fp):
         adapters.append(int(clean(line)))
 
+def sort_func(a,b):
+    if b - a <= 3:
+        return 1
+    return -1
+
+adapters.insert(0, 0)
 adapters.sort()
+print(adapters)
+diffs = []
 
-def get_arrangement():
-    arrangement = [0]
+for index, adapter in enumerate(adapters):
+    if index + 1 >= len(adapters):
+        break
+    diffs.append(adapters[index+1] - adapter)
 
-    for adapter in adapters:
-        if adapter - arrangement[-1] <= 3:
-            arrangement.append(adapter)
-    return arrangement
+print(diffs)
 
-print(get_arrangement())
+counts=[]
+prev_diff = -1
 
+for diff in diffs:
+    if diff != prev_diff and diff != 3:
+        counts.append(0)
+    if diff == 1:
+        counts[-1] += 1
+    prev_diff = diff
+results = []
 
+for count in counts:
+    if count == 1:
+        results.append(1)
+    elif count == 2:
+        results.append(2)
+    elif count == 3:
+        results.append(4)
+    elif count == 4:
+        results.append(7)
+    elif count == 5:
+        results.append(11)
 
-
-
-
-
-
-
-
-
-
+print("counts=",counts)
+print("results=",results)
+print(functools.reduce(lambda nxt,acc: acc*nxt, results))
 
 
