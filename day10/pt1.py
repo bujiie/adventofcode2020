@@ -44,7 +44,7 @@ def sort_func(a,b):
     return -1
 
 adapters.sort()
-
+print(adapters)
 diffs = []
 
 for index, adapter in enumerate(adapters):
@@ -53,6 +53,7 @@ for index, adapter in enumerate(adapters):
     diffs.append(adapters[index+1] - adapter)
 
 print(diffs)
+
 counts={}
 
 for diff in diffs:
