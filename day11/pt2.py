@@ -167,8 +167,8 @@ while True:
         for col in row:
             line += col
             mega_line += col
-        print(line)
-    print("\n")
+        # print(line)
+    # print("\n")
 
     if last_hash == mega_line:
         break
@@ -177,7 +177,7 @@ while True:
     last_hash = mega_line
     i += 1
 
-print(i)
+# print(i)
 print(len(get_occupied_seats(s)))
 
 
