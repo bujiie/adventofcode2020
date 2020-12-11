@@ -47,62 +47,117 @@ def get_surrounding_seats(seat, seating=[]):
     (n,m) = seat
 
     n_min = 0
-    n_max = len(seating)
+    n_max = len(seating)-1
     m_min = 0
-    m_max = len(seating[0])
+    m_max = len(seating[0])-1
 
     taken = []
-    closest = -1
+    closest = (-1, '')
     for i,s in enumerate(seating[n]):
-        if s == '#' and i != m:
-            closest = i
-        if i == m and closest != -1:
-            taken.append((n,closest))
-            closest = -1
-        if i > m and closest != -1:
-            taken.append((n,closest))
-            break
+        if (s == '#' or s=='L') and i != m:
+            closest = (i, s)
+        if i == m:
+            if closest[0] >= 0 and closest[1] == '#':
+                taken.append((n,closest[0]))
+            closest = (-1,'')
+        if i > m:
+            if closest[0] >= 0:
+                if closest[1] == '#':
+                    taken.append((n,closest[0]))
+                break
 
-    closest = -1
+    closest = (-1, '')
     for i,s in enumerate(seating):
-        if s[m] == '#' and i != n:
-            closest = i
-        if i == n and closest != -1:
-            taken.append((closest,m))
-            closest = -1
-        if i > n and closest != -1:
-            taken.append((closest,m))
-            break
+        if (s[m] == '#' or s[m]=='L') and i != n:
+            closest = (i,s[m])
+        if i == n:
+            if closest[0] >= 0 and closest[1] == '#':
+                taken.append((closest[0],m))
+            closest = (-1,'')
+        if i > n:
+            if closest[0] >= 0:
+                if closest[1] == '#':
+                    taken.append((closest[0],m))
+                break
 
-    closest = -1
-    l_max = n if n < m else m
-    for i in range(l_max, 0, -1):
-        if seating[n-i][m-i] == '#' and (n-i) != n and (m-i) != m and (n-i) >= 0  and (m-i) >= 0:
-            taken.append((n-i,m-i))
+    i = 1
+    while m-i > -1 and n-i > -1:
+        x = n-i
+        y = m-i
+        s = seating[x][y]
+        if s == '#':
+            taken.append((x,y))
             break
+        elif s == 'L':
+            break
+        i += 1
 
-    closest = -1
-    # print("n_max=",n_max,"n=",n,"m_max=",m_max,"m=",m)
-    r_max = (n_max - n) if (n_max - n) < (m_max - m) else (m_max - m)
-    for i in range(0, r_max):
-        if seating[n+i][m+i] == '#' and (n+i) != n and (m+i) != m:
-            taken.append((n+i,m+i))
+    j = 1
+    while m+j <= m_max and n+j <= n_max:
+        x = n+j
+        y = m+j
+        s = seating[x][y]
+        if s == '#':
+            taken.append((x,y))
             break
+        elif s == 'L':
+            break
+        j += 1
 
-    closest = -1
-    l_max = (m_max - m) if (m_max - m) < n else n
-    for i in range(0, l_max):
-        # print("n=",n,"m=",m,"i=",i, l_max, len(seating), len(seating[n+i]))
-        if seating[n-i][m+i] == '#' and (n-i) != n and (n-i) >= 0 and (m+i) != m:
-            taken.append((n-i,m+i))
+    k = 1
+    while m+k <= m_max and n-k > -1:
+        x = n-k
+        y = m+k
+        s = seating[x][y]
+        if s == '#':
+            taken.append((x,y))
             break
+        elif s == 'L':
+            break
+        k += 1
 
-    closest = -1
-    r_max = (n_max - n) if (n_max - n) < m else m
-    for i in range(0, r_max):
-        if seating[n+i][m-i] == '#' and (n+i) != n and (m-i) != m and (m-i) >= 0:
-            taken.append((n+i,m-i))
+    l = 1
+    while m-l > -1 and n+l <= n_max:
+        x = n+l
+        y = m-l
+        s = seating[x][y]
+        if s == '#':
+            taken.append((x,y))
             break
+        elif s == 'L':
+            break
+        l += 1
+
+    # l_max = n if n < m else m
+    # for i in range(1,l_max+1):
+    #     # print("bau->","n=",n,"m=",m,"i=",i,"seat=",seating[n-i][m-i])
+    #     if (seating[n-i][m-i] == '#' or seating[n-i][m-i] == 'L'):
+    #         if seating[n-i][m-i] == '#':
+    #             taken.append((n-i,m-i))
+    #         break
+
+    # r_max = (n_max - n) if (n_max - n) < (m_max - m ) else (m_max - m)
+    # for i in range(1, r_max-1):
+    #     if (seating[n+i][m+i] == '#' or seating[n+i][m+i] == 'L'):
+    #         if seating[n+i][m+i] == '#':
+    #             taken.append((n+i,m+i))
+    #         break
+
+    # l_max = (m_max - m) if (m_max - m) < n else n
+    # for i in range(1, l_max):
+    #     if (seating[n-i][m+i] == '#' or seating[n-i][m+i] == 'L'):
+    #         if seating[n-i][m+i] == '#':
+    #             taken.append((n-i,m+i))
+    #         break
+
+    # r_max = (n_max - n) if (n_max - n) < m else m
+    # # print("rmax=",r_max,"n=",n,"m=",m)
+    # for i in range(1, r_max+1):
+    #     if (seating[n+i][m-i] == '#' or seating[n+i][m-i] == 'L'):
+    #         # print("n=",n,"m=",m,"n1=",n+1,"m1=",m-1, seating[n+1][m-1])
+    #         if seating[n+i][m-i] == '#':
+    #             taken.append((n+i,m-i))
+    #         break
 
     print("n=",n,"m=",m,"taken=",set(taken))
     return list(set(taken))
