@@ -47,9 +47,9 @@ def get_surrounding_seats(seat, seating=[]):
     (n,m) = seat
 
     n_min = 0
-    n_max = len(seats[0])
+    n_max = len(seating)
     m_min = 0
-    m_max = len(seats)
+    m_max = len(seating[0])
 
     taken = []
     closest = -1
@@ -63,6 +63,7 @@ def get_surrounding_seats(seat, seating=[]):
             taken.append((n,closest))
             break
 
+    closest = -1
     for i,s in enumerate(seating):
         if s[m] == '#' and i != n:
             closest = i
@@ -73,61 +74,45 @@ def get_surrounding_seats(seat, seating=[]):
             taken.append((closest,m))
             break
 
+    closest = -1
+    l_max = n if n < m else m
+    for i in range(l_max, 0, -1):
+        if seating[n-i][m-i] == '#' and (n-i) != n and (m-i) != m and (n-i) >= 0  and (m-i) >= 0:
+            taken.append((n-i,m-i))
+            break
 
+    closest = -1
+    # print("n_max=",n_max,"n=",n,"m_max=",m_max,"m=",m)
+    r_max = (n_max - n) if (n_max - n) < (m_max - m) else (m_max - m)
+    for i in range(0, r_max):
+        if seating[n+i][m+i] == '#' and (n+i) != n and (m+i) != m:
+            taken.append((n+i,m+i))
+            break
 
+    closest = -1
+    l_max = (m_max - m) if (m_max - m) < n else n
+    for i in range(0, l_max):
+        # print("n=",n,"m=",m,"i=",i, l_max, len(seating), len(seating[n+i]))
+        if seating[n-i][m+i] == '#' and (n-i) != n and (n-i) >= 0 and (m+i) != m:
+            taken.append((n-i,m+i))
+            break
 
-    # if m > 0:
-    #     for i in range(m-1,m_min,-1):
-    #         if seating[n][i] == '#':
-    #             taken.append((n,i))
-    #             break
-    #     for i in range(m-1,m_min,-1):
-    #         for j in range(m,m_min,-1):
-    #             if seating[i][j] == '#':
-    #                 taken.append((i,j))
-    #                 break
-    # if n > 0:
-    #     for i in range(n-1,n_min,-1):
-    #         if seating[i][m] == '#':
-    #             taken.append((i,m))
-    #             break
-    #     for i in range(n-1,n_min,-1):
-    #         for j in range(m,m_max):
-    #             if seating[i][j] == '#':
-    #                 taken.append((i,j))
-    #                 break
+    closest = -1
+    r_max = (n_max - n) if (n_max - n) < m else m
+    for i in range(0, r_max):
+        if seating[n+i][m-i] == '#' and (n+i) != n and (m-i) != m and (m-i) >= 0:
+            taken.append((n+i,m-i))
+            break
 
-    # if n < n_max:
-    #     for i in range(n+1,n_max):
-    #         if seating[i][m] == '#':
-    #             taken.append((i,m))
-    #             break
-
-    #     for i in range(n+1,n_max):
-    #         for j in range(m,m_max):
-    #             if seating[i][j] == '#':
-    #                 taken.append((i,j))
-    #                 break
-    # if m < m_max:
-    #     for i in range(m+1,m_max):
-    #         if seating[n][i] == '#':
-    #             taken.append((n,i))
-    #             break
-
-    #     for i in range(n+1,n_max):
-    #         for j in range(m,m_min,-1):
-    #             if seating[i][j] == '#':
-    #                 taken.append((i,j))
-    #                 break
     print("n=",n,"m=",m,"taken=",set(taken))
-    return taken
+    return list(set(taken))
 
 def do_update_seats(seating):
     updated_seats = copy.deepcopy(seating)
     for r_index, row in enumerate(seating):
         for c_index, col in enumerate(row):
             taken = get_surrounding_seats((r_index, c_index), seating)
-            #print("r=",r_index,"c=",c_index,"adj=",adj_seats)
+            # print("r=",r_index,"c=",c_index,"adj=",taken)
             if seating[r_index][c_index] == 'L' and len(taken) == 0:
                 updated_seats[r_index][c_index] = '#'
             elif seating[r_index][c_index] == '#' and len(taken) > 4:
@@ -168,7 +153,7 @@ while True:
     last_hash = mega_line
     i += 1
 
-
+print(i)
 print(len(get_occupied_seats(s)))
 
 
