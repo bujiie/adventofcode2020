@@ -128,38 +128,7 @@ def get_surrounding_seats(seat, seating=[]):
             break
         l += 1
 
-    # l_max = n if n < m else m
-    # for i in range(1,l_max+1):
-    #     # print("bau->","n=",n,"m=",m,"i=",i,"seat=",seating[n-i][m-i])
-    #     if (seating[n-i][m-i] == '#' or seating[n-i][m-i] == 'L'):
-    #         if seating[n-i][m-i] == '#':
-    #             taken.append((n-i,m-i))
-    #         break
-
-    # r_max = (n_max - n) if (n_max - n) < (m_max - m ) else (m_max - m)
-    # for i in range(1, r_max-1):
-    #     if (seating[n+i][m+i] == '#' or seating[n+i][m+i] == 'L'):
-    #         if seating[n+i][m+i] == '#':
-    #             taken.append((n+i,m+i))
-    #         break
-
-    # l_max = (m_max - m) if (m_max - m) < n else n
-    # for i in range(1, l_max):
-    #     if (seating[n-i][m+i] == '#' or seating[n-i][m+i] == 'L'):
-    #         if seating[n-i][m+i] == '#':
-    #             taken.append((n-i,m+i))
-    #         break
-
-    # r_max = (n_max - n) if (n_max - n) < m else m
-    # # print("rmax=",r_max,"n=",n,"m=",m)
-    # for i in range(1, r_max+1):
-    #     if (seating[n+i][m-i] == '#' or seating[n+i][m-i] == 'L'):
-    #         # print("n=",n,"m=",m,"n1=",n+1,"m1=",m-1, seating[n+1][m-1])
-    #         if seating[n+i][m-i] == '#':
-    #             taken.append((n+i,m-i))
-    #         break
-
-    print("n=",n,"m=",m,"taken=",set(taken))
+    # print("n=",n,"m=",m,"taken=",set(taken))
     return list(set(taken))
 
 def do_update_seats(seating):
@@ -182,7 +151,7 @@ def get_occupied_seats(seating):
                 occupied.append((r_index,c_index))
     return occupied
 
-max_count=1
+max_count=1000000
 count = 1
 i = 0
 s = copy.deepcopy(seats)
