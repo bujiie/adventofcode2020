@@ -113,4 +113,3 @@ print(len(get_occupied_seats(s)))
 
 
 
-
