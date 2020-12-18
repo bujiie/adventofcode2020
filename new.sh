@@ -4,8 +4,8 @@ day=$1
 
 challenge_dir="day${1}"
 input_dir="input"
-sample_input_file="sample.txt"
-problem_input_file="problem.txt"
+sample_input_file="sample.in"
+problem_input_file="problem.in"
 
 mkdir $challenge_dir
 cp __template.py "${challenge_dir}/pt1.py"
