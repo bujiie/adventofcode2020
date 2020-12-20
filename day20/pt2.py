@@ -68,6 +68,7 @@ for n in NM:
     else:
         CNM[key] += 1
 
+print(CNM)
 ans = 1
 corners = 0
 edges = 0
