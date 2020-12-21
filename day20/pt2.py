@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
 import sys
+from collections import deque
 
 filename=sys.argv[1]
 
 T = {}
 E = {}
+
+def rotate(frame, n = 1):
+    # assume we read all frames top->bottom, left-> right
+    frame.rotate(n)
+    return [f[::-1] for f in frame if n%2 == 0]
 
 with open(filename) as fp:
     id = None
@@ -22,7 +28,8 @@ with open(filename) as fp:
 
 for id in T:
     # Top, Right, Bottom, Left
-    E[id] = []
+    E[id] = deque()
+
     left = ''
     right = ''
     for i, row in enumerate(T[id]):
@@ -34,6 +41,7 @@ for id in T:
             E[id].append(right)
             E[id].append(row)
             E[id].append(left)
+print(E)
 
 NM = []
 
@@ -60,26 +68,37 @@ for id in E:
             NM.append((id, edge))
             matched = False
 
+
 CNM = {}
 for n in NM:
     key, edge = n
     if key not in CNM:
-        CNM[key] = 1
+        CNM[key] = [edge]
     else:
-        CNM[key] += 1
+        CNM[key].append(edge)
 
-print(CNM)
-ans = 1
-corners = 0
-edges = 0
+CM = {}
+
 for key in CNM:
-    if CNM[key] == 1:
-        edges += 1
-    if CNM[key] == 2:
-        corners += 1
-        ans *= int(key)
+    if len(CNM[key]) == 2:
+        for edge in CNM[key]:
+            if key not in CM:
+                CM[key] = {}
 
-print('corners=',corners,'edges=',edges)
-print(ans)
+            loc = E[key].index(edge)
+            print(key, loc, edge)
+            if loc == 0:
+                CM[key]['T'] = edge
+            elif loc == 1:
+                CM[key]['R'] = edge
+            elif loc == 2:
+                CM[key]['B'] = edge
+            elif loc == 3:
+                CM[key]['L'] = edge
+
+print('')
+print(CM)
+
+# print(CNM)
 
 
