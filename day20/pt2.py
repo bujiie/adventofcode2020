@@ -40,6 +40,29 @@ def get_frame(frame_number):
         return T[frame_number]
     return None
 
+def get_edge(frame, side = 'T'):
+    if side == 'T':
+        return frame[0]
+    elif side == 'B':
+        return frame[-1]
+    elif side == 'L':
+        edge = []
+        for i in range(len(frame)):
+            edge.append(frame[i][0])
+        return ''.join(edge)
+    elif side == 'R':
+        edge = []
+        for i in range(len(frame)):
+            edge.append(frame[i][-1])
+        return ''.join(edge)
+
+
+def get_index_for_side(side):
+    sides = {'T': 0, 'R': 1, 'B': 2, 'L': 3}
+    if side in sides:
+        return sides[side]
+    return -1
+
 def edge_sides_for_matching(frame, edge_side):
     # if bound edge is the LEFT, as we move counter clockwise
     # the indices will reset back to 0. Easier to just
@@ -217,12 +240,61 @@ for key in BORDER:
         continue
     edges.append((key, BORDER[key]))
 
-for i in range(dimension):
-    for j in range(dimension):
-        if i not in [0,dimension-1] and j in [1, dimension-2]:
+for x in range(dimension):
+    for y in range(dimension):
+        if x not in [0,dimension-1] and y in [1, dimension-2]:
             # only care about the top/bottom rows and the edge pieces going
             # down the side of the frame
             continue
+
+        for dx in [-1,0,1]:
+            for dy in [-1,0,1]:
+                if dx != dy and not (dx == 1 and dy == -1) and not (dx == -1 and dy == 1):
+                    xx = x + dx
+                    yy = y + dy
+                    if 0 <= xx < dimension and 0 <= yy < dimension:
+                        if G[xx][yy] == None:
+                            break
+
+                        (f_number, r) = G[xx][yy]
+                        f = get_frame(f_number, r)
+
+                        for key in T:
+                            if key in ['2971','3079','1951','1171']:
+                                continue
+
+                            frame = get_frame(key)
+                            found_rot = None
+                            for rot in [0, 90, 180, 270]:
+                                frame = rotate_frame(frame, rot)
+                                left_edge = get_edge(frame, 'L')
+                                right_edge = get_edge(Frame, 'R')
+                                top_edge = get_edge(frame, 'T')
+                                bottom_edge = get_edge(frame, 'B')
+
+                                if dx == 0:
+                                    if dy == -1:
+                                        if left_edge == get_edge(f, 'R'):
+                                            found_rot = rot
+                                            break
+                                    else:
+                                        if right_edge == get_edge(f, 'L'):
+                                            found_rot = rot
+                                            break
+                                elif dy == 0:
+                                    if dx == -1:
+                                        if bottom_edge == get_edge(f, 'T'):
+                                            found_rot = rot
+                                            break
+                                    else:
+                                        if top_edge == get_edge(f, 'B'):
+                                            found_rot = rot
+                                            break
+
+
+
+
+
 
         for edge in edges:
             frame_number, locked_edge = edge
@@ -269,8 +341,9 @@ def print_grid(grid, empty_char='o'):
         print('\n')
 
 
-print_grid(G, '-')
-print('')
+# print_grid(G, '-')
+# print('')
+print(T)
 
 
 
