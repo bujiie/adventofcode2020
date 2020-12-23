@@ -35,6 +35,11 @@ def rotate_frame(frame, rot=90):
         frame = new_frame
     return frame
 
+def flip_frame(frame):
+    for i in len(frame):
+        frame[i] = frame[i][::-1]
+    return frame
+
 def get_frame(frame_number):
     if frame_number in T:
         return T[frame_number]
@@ -240,6 +245,9 @@ for key in BORDER:
         continue
     edges.append((key, BORDER[key]))
 
+used = []
+GNO ={}
+
 for x in range(dimension):
     for y in range(dimension):
         if x not in [0,dimension-1] and y in [1, dimension-2]:
@@ -257,18 +265,20 @@ for x in range(dimension):
                             break
 
                         (f_number, r) = G[xx][yy]
-                        f = get_frame(f_number, r)
+                        f = rotate_frame(get_frame(f_number), r)
+
+                        found_rot = None
+                        found_key = None
 
                         for key in T:
-                            if key in ['2971','3079','1951','1171']:
+                            if key in ['2971','3079','1951','1171'] and key not in used:
                                 continue
 
                             frame = get_frame(key)
-                            found_rot = None
                             for rot in [0, 90, 180, 270]:
                                 frame = rotate_frame(frame, rot)
                                 left_edge = get_edge(frame, 'L')
-                                right_edge = get_edge(Frame, 'R')
+                                right_edge = get_edge(frame, 'R')
                                 top_edge = get_edge(frame, 'T')
                                 bottom_edge = get_edge(frame, 'B')
 
@@ -290,35 +300,12 @@ for x in range(dimension):
                                         if top_edge == get_edge(f, 'B'):
                                             found_rot = rot
                                             break
+                            if found_rot != None:
+                                found_key = key
+                                break
+                            else:
+                                GNO[x][y].append(key)
 
-
-
-
-
-
-        for edge in edges:
-            frame_number, locked_edge = edge
-            edge_value = list(locked_edge.values())[0]
-
-            if i == 0:
-                l_frame, rot = lock_frame(frame_number, edge_value, 'T')
-                if G[i][j-1] != None:
-                    left_frame_side = get_frame_edge(G[i][j-1][0], 'R')
-                    n = get_side_index('L')
-                    target_frame_side = l_frame[n]
-                    if left_frame_side == target_frame_side:
-                        G[i][j] = (frame_number, rot)
-                # align all unmatched edges to Top (0)
-                pass
-            elif j == 0:
-                # align all unmatched edges to Left (3)
-                pass
-            elif j == dimension-1:
-                # align all unmatched edges to Right (1)
-                pass
-            elif i == dimension-1:
-                # align all unmatched edges to Bottom (2)
-                pass
 
 frame_dimension = -1
 for key in E:
@@ -341,9 +328,8 @@ def print_grid(grid, empty_char='o'):
         print('\n')
 
 
-# print_grid(G, '-')
+print_grid(G, '-')
 # print('')
-print(T)
 
 
 
