@@ -78,6 +78,7 @@ for key in CNM:
         corners += 1
         ans *= int(key)
 
+print(NM)
 print('corners=',corners,'edges=',edges)
 print(ans)
 
