@@ -12,6 +12,7 @@ filename=sys.argv[1]
 
 r_len = 10
 c_len = 10
+divider_len = 60
 
 with open(filename) as fp:
     id = None
@@ -56,12 +57,15 @@ for id1 in Edges:
             matching_edges[id1].add(id2)
 
 G = [[None for x in range(dim)] for y in range(dim)]
+
+corners = []
+for id in matching_edges:
+    if len(matching_edges[id]) == 2:
+        corners.append(id)
+
 # Corner
-G[0][0] = '3079'
-# neighbor to corner
-G[0][1] = '2473'
-# neighbor to corner
-G[1][0] = '2311'
+G[0][0] = corners[0]
+G[0][1], G[1][0] = matching_edges[corners[0]]
 used = {G[0][0],G[0][1],G[1][0]}
 
 # Don't worry about orientation just yet. First put all the tiles in their correct
@@ -114,10 +118,10 @@ def does_match(t1, t2, n_coord):
         return True
     # neighbor tile is BELOW the context tile
     elif n_coord == (-1, 0):
-        return t1[-1] == t2[0]
+        return t1[0] == t2[-1]
     # neighbor tile is ABOVE the context tile
     elif n_coord == (1, 0):
-        return t1[0] == t2[-1]
+        return t1[-1] == t2[0]
     else:
         return False
 
@@ -196,6 +200,8 @@ for x in range(dim):
                 if len(orients1) == 1:
                     P[x][y] = next(iter(orients1))
 
+print('ALIGNED TILES')
+print('='*divider_len)
 print_grid(P)
 
 I = [[None for _ in range(dim)] for _ in range(dim)]
@@ -211,30 +217,60 @@ for x in range(dim):
             new_tile.append(tuple(P[x][y][i][1:-1]))
         I[x][y] = tuple(new_tile)
 
+print('RECONSTRUCTED IMAGE')
+print('='*divider_len)
 print_grid(I, separate=False)
+print('\n')
+
+# Reduce image to a 2D array instead of separate structures for each tile.
+# We don't need to track individual tiles anymore.
+rows_of_tiles = len(I)
+cols_of_tiles = len(I[0])
+rows_in_tile = len(I[0][0])
+cols_in_tile = len(I[0][0][0])
+new_I = []
+
+for x in range(rows_of_tiles):
+    for i in range(rows_in_tile):
+        new_line = []
+        for y in range(cols_of_tiles):
+            new_line += I[x][y][i]
+        new_I.append(new_line)
+I = new_I
+
+print('FLATTENED IMAGE ARRAY (should be identitcal to previous)')
+print('='*divider_len)
+print_grid(I, separate=False)
+print('\n')
+
 
 # Find the monster
 monster = ['                  # ',
            '#    ##    ##    ###',
            ' #  #  #  #  #  #   ']
 
-monster_rel = [
+monster_rel = {
     (0, 18),
     (1, 0),(1, 5),(1, 6),(1, 11),(1, 12),(1, 17), (1, 18), (1, 19),
     (2, 1),(2, 4), (2, 7), (2, 10), (2, 13), (2, 16)
-]
+}
+
 mx_len = len(monster)
 my_len = len(monster[0])
 
+num_monsters = 0
+
+orientation = None
+monsters = []
+
 for oi, orient in enumerate(orientations(I)):
-    print(orient)
     ir = len(orient)
     ic = len(orient[0])
 
     for x in range(ir):
         for y in range(ic):
-            print(oi,"checking for monsters... x,y=",x,y, ir, ic)
-            print("y_len", my_len, "x_len", mx_len)
+            # print(oi,"checking for monsters... x,y=",x,y, ir, ic)
+            # print("y_len", my_len, "x_len", mx_len)
             maybe_monster = set()
             if y + my_len > ic - 1:
                 continue
@@ -243,15 +279,53 @@ for oi, orient in enumerate(orientations(I)):
 
             for rel in monster_rel:
                 dx, dy = rel
-                print(rel)
+                # print(rel)
                 xx = x + dx
                 yy = y + dy
                 if orient[xx][yy] == '#':
-                    print("maybe")
                     maybe_monster.add((dx,dy))
 
-            if len(maybe_monster) == len(monster_rel):
-                print("MONSTER FOUND!")
+            if len(monster_rel.difference(maybe_monster)) == 0:
+                monsters.append((x,y))
+                orientation = (oi, orient)
+                num_monsters += 1
+
+# Not necessary, but a nice visual. Replace all monster characters
+# with something other than # to make them more visible.
+m_replace = 'T'
+temp = [list(r) for r in orientation[1]]
+for m in monsters:
+    x,y = m
+    for rel in monster_rel:
+        dx,dy = rel
+        temp[x+dx][y+dy] = m_replace
+
+print(f'ORIENTATION WITH MONSTERS FOUND (orientation no. {orientation[0]})')
+print('='*divider_len)
+print_grid(orientation[1], separate=False)
+print('\n')
+
+print(f'IMAGE WITH MONSTERS OUTLINED WITH ({m_replace})')
+print('='*divider_len)
+print_grid(temp, separate=False)
+print('\n')
+
+num_pounds = 0
+for row in I:
+    num_pounds += row.count('#')
+
+num_pounds_monster = 0
+for row in monster:
+    num_pounds_monster += row.count('#')
+
+print('IMAGE STATS')
+print('='*divider_len)
+print('monster size: ', num_pounds_monster)
+print('no. of monsters: ', num_monsters)
+print('no. of pound signs: ', num_pounds)
+print('no. of rough seas: ', num_pounds - (num_monsters * num_pounds_monster))
+print('\n')
+
 
 
 
