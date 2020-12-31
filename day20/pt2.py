@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
 import sys
-from collections import deque
-import pprint
-from copy import deepcopy
+from collections import defaultdict
 import math
-
-filename=sys.argv[1]
+from copy import deepcopy
 
 Tiles = {}
 Edges = {}
+
+filename=sys.argv[1]
+
+r_len = 10
+c_len = 10
 
 with open(filename) as fp:
     id = None
@@ -22,362 +24,236 @@ with open(filename) as fp:
         elif len(line) == 0:
             id = None
         else:
-            Tiles[id].append(line)
+            Tiles[id].append(list(line))
+
+dim = int(math.sqrt(len(Tiles)))
 
 # Compile all the edges for each tile
 for id in Tiles:
-    # Top, Right, Bottom, Left
-    Edges[id] = []
+    top = []
+    right = []
+    bottom = []
+    left = []
+    for r in range(r_len):
+        left.append(Tiles[id][r][0])
+        right.append(Tiles[id][r][-1])
+    for c in range(c_len):
+        top.append(Tiles[id][0][c])
+        bottom.append(Tiles[id][-1][c])
+    # IMPORTANT: The range order of this loop locks the list indices to a respective tile side
+    # 0 = top, 1 = right, 2 = bottom, 3 = left
+    edges = [e for e in [top, right, bottom, left]]
+    Edges[id] = set([tuple(e) for e in edges] + [tuple(reversed(e)) for e in edges])
 
-    left_edge = ''
-    right_edge = ''
-    for i, row in enumerate(Tiles[id]):
-        if i == 0:
-            Edges[id].append(row)
-        left_edge += row[0]
-        right_edge += row[-1]
+# For each tile, define a set of other tiles that have a matching edge.
+matching_edges = defaultdict(set)
+for id1 in Edges:
+    for id2 in Edges:
+        if id1 == id2:
+            continue
 
-        if i == len(Tiles[id]) -1:
-            Edges[id].append(right_edge)
-            Edges[id].append(row)
-            Edges[id].append(left_edge)
+        if len(Edges[id1].intersection(Edges[id2])) > 0:
+            matching_edges[id1].add(id2)
 
+G = [[None for x in range(dim)] for y in range(dim)]
+# Corner
+G[0][0] = '3079'
+# neighbor to corner
+G[0][1] = '2473'
+# neighbor to corner
+G[1][0] = '2311'
+used = {G[0][0],G[0][1],G[1][0]}
 
-def get_tile(id, tiles = []):
-    if id in tiles:
-        return tiles[id]
-    return None
-
-def rotate_full_tile(tile, rot=90):
-    tile = deepcopy(tile)
-    dimension = len(tile)
-    for _ in range(int(rot/90)):
-        new_tile = []
-        for y in range(dimension):
-            line = ''
-            for x in reversed(range(dimension)):
-                line += tile[x][y]
-            new_tile.append(line)
-        tile = new_tile
-    return tile
-
-def rotate_tile(tile, rot=90):
-    tile = deepcopy(tile)
-    for _ in range(int(rot/90)):
-        last = tile.pop()
-        tile.insert(0, last)
-        tile[0] = tile[0][::-1]
-        tile[2] = tile[2][::-1]
-    return tile
-
-def flip_tile_horizontal(tile):
-    tile = deepcopy(tile)
-    tile[1], tile[3] = tile[3], tile[1]
-    tile[0] = tile[0][::-1]
-    tile[2] = tile[2][::-1]
-    return tile
-
-def flip_full_tile_horizontal(tile):
-    tile = deepcopy(tile)
-    for i, line in enumerate(tile):
-        tile[i] = tile[i][::-1]
-    return tile
-
-def flip_tile_vertical(tile):
-    tile = deepcopy(tile)
-    tile[0], tile[2] = tile[2], tile[0]
-    tile[1] = tile[1][::-1]
-    tile[3] = tile[3][::-1]
-    return tile
-
-def flip_full_tile_vertical(tile):
-    tile = deepcopy(tile)
-    tile.reverse()
-    return tile
-
-def flip_tile(tile, direction='h'):
-    if direction == 'h':
-        return flip_tile_horizontal(tile)
-    elif direction == 'v':
-        return flip_tile_vertical(tile)
-
-def flip_full_tile(tile, direction='h'):
-    if direction == 'h':
-        return flip_full_tile_horizontal(tile)
-    elif direction == 'v':
-        return flip_full_tile_vertical(tile)
-
-def get_tile_edge(tile, edge='T'):
-    edge_to_index = {'T': 0, 'R': 1, 'B': 2, 'L': 3}
-    if edge not in edge_to_index:
-        return None
-    return tile[edge_to_index[edge]]
-
-def find_matching_tile_orientation(ctx_tile, target_edge, candidate):
-    ctx_tile_edge = get_tile_edge(ctx_tile, target_edge)
-    edge_pairs = {'T': 'B', 'B': 'T', 'L': 'R', 'R': 'L'}
-
-    look_at_edge = edge_pairs[target_edge]
-    for rot in [0, 90, 180, 270]:
-        for flip in ['n','h','v']:
-            xform_tile = rotate_tile(candidate, rot)
-            if flip != 'n':
-                xform_tile = flip_tile(xform_tile, flip)
-            xform_tile_edge = get_tile_edge(xform_tile, look_at_edge)
-            if ctx_tile_edge == xform_tile_edge:
-                return (rot, flip)
-    return None
-
-# for edges
-def print_tile(tile, empty_cell='x'):
-    dimension = len(tile[0])
-    print(tile[0])
-    for x in range(1, dimension-1):
-        print(tile[3][x], end='')
-        print(empty_cell*(dimension-2), end='')
-        print(tile[1][x])
-    print(tile[2])
-
-# for full tile
-def print_full_tile(tile):
-    for line in tile:
-        print(line)
-
-def get_permutations(tile):
-    skip = [(180,'v'),(180,'h'),(270,'v'),(270,'h')]
-    res = {}
-    for rot in [0, 90, 180, 270]:
-        for flip in ['n', 'v', 'h']:
-            if (rot,flip) in skip:
+# Don't worry about orientation just yet. First put all the tiles in their correct
+# places in the grid by checking that they match all of their neighbors edges.
+while len(used) < len(Tiles):
+    for x in range(dim):
+        for y in range(dim):
+            if G[x][y] is not None:
                 continue
-            xform_tile = rotate_tile(tile, rot)
-            if flip != 'n':
-                xform_tile = flip_tile(xform_tile, flip)
-            res[(rot, flip)] = xform_tile
-    return res
 
-def resolve_grid(grid, empty_char='o'):
-    new_grid = deepcopy(grid)
+            available = set([a for a in matching_edges.keys() if a not in used])
+            for dx in [-1,0,1]:
+                for dy in [-1,0,1]:
+                    # (0,0) is the context piece
+                    if dx == 0 and dy == 0:
+                        continue
+                    # we are not concerned with the diagonal neighbors
+                    if dx == dy or dx == -dy:
+                        continue
+                    xx = x + dx
+                    yy = y + dy
+                    if 0 <= xx < dim and 0 <= yy < dim and G[xx][yy] is not None:
+                        # For each neighbor that already has a tile, we need to determine which tiles
+                        # will match if put in the (x,y) spot. As we ask each neighbor which tiles they
+                        # match with, by continually taking the intersection, we will eventually find
+                        # 0 or 1 that satisfies all the neighbors.
+                        available = available.intersection(matching_edges[G[xx][yy]])
 
-    r_len = len(grid)
-    c_len = len(grid[0])
-    d_len = len(grid[0][0][3][0])
+                        if len(available) == 1:
+                            match = next(iter(available))
+                            G[x][y] = match
+                            used.add(match)
 
-    for x in range(r_len):
-        for y in range(c_len):
-            if grid[x][y]:
-                id, rot, flip, _ = grid[x][y]
-                # get_tile capable of getting full or edge tile representation
-                tile = get_tile(id, Tiles)
-                xform_tile = rotate_full_tile(tile, rot)
-                if flip != 'n':
-                    xform_tile = flip_full_tile(xform_tile, flip)
-                new_grid[x][y] = xform_tile
-            else:
-                lines = []
-                for _ in range(d_len):
-                    lines.append(empty_char*(d_len-1))
-                new_grid[x][y] = lines
-    return new_grid
+
+# t1 = context tile
+# t2 = neighbor tile
+# n_coord = relative coord (dx, dy) of t2 with respect to t1
+def does_match(t1, t2, n_coord):
+    # neighbor tile is to the LEFT of context tile
+    if n_coord == (0, -1):
+        for i in range(len(t1[0])):
+            if t1[i][0] != t2[i][-1]:
+                return False
+        return True
+    # neighbor tile is to the RIGHT of context tile
+    elif n_coord == (0, 1):
+        for i in range(len(t1[0])):
+            if t1[i][-1] != t2[i][0]:
+                return False
+        return True
+    # neighbor tile is BELOW the context tile
+    elif n_coord == (-1, 0):
+        return t1[-1] == t2[0]
+    # neighbor tile is ABOVE the context tile
+    elif n_coord == (1, 0):
+        return t1[0] == t2[-1]
+    else:
+        return False
+
+
+def rotate(t):
+    dimension = len(t)
+    new_t = []
+    for y in range(dimension):
+        row = []
+        for x in reversed(range(dimension)):
+            row.append(t[x][y])
+        new_t.append(row)
+    return new_t
+
+
+def flip(t):
+    return list(reversed(t))
+
+
+def orientations(t):
+    orients = set()
+    transforms = [deepcopy(t), flip(t)]
+    for _ in range(4):
+        orients.add(tuple([tuple(x) for x in transforms[0]]))
+        orients.add(tuple([tuple(x) for x in transforms[1]]))
+        transforms = [rotate(transforms[0]), rotate(transforms[1])]
+    return orients
 
 # will always print full tiles
-def print_grid(grid, empty_char='o'):
+def print_grid(grid, separate=True, empty_char='o'):
     r_len = len(grid)
     c_len = len(grid[0])
     x_len = len(grid[0][0])
     for i in range(r_len):
         for x in range(x_len):
             for j in range(c_len):
-                print(grid[i][j][x], end='')
-                print('\t', end='')
+                print(''.join(grid[i][j][x]), end='')
+                if separate:
+                    print('\t', end='')
             print('')
-        print('\n\n', end='')
+        if separate:
+            print('\n')
 
+P = [[None for _ in range(dim)] for _ in range(dim)]
 
+# Now we need to orient all the pieces so the edges actually match.
+for x in range(dim):
+    for y in range(dim):
+        orients1 = orientations(Tiles[G[x][y]])
 
-
-dimension = int(math.sqrt(len(Tiles)))
-G = [[None for x in range(dimension)] for y in range(dimension)]
-
-used = set()
-r_len = len(G)
-c_len = len(G[0])
-edges = list(Edges.keys())
-edge_pairs = {'T':'B','B':'T','L':'R','R':'L'}
-target_edges = {(-1,0):'R',(1,0):'L',(0,1):'B',(0,-1):'T'}
-
-for x in range(r_len):
-    for y in range(c_len):
-        # print("observing=",x,y, G[x][y])
-        # skip if this coord already has a tile
-        if G[x][y]:
-            continue
-
-
-        print('')
-        print(x,y)
-        print(G)
-        # collect all neighbor edges that need to match
-        edges_to_match = {}
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                # we don't need to match diagonal neighbors
-                if (dx != 0 and dy != 0) or (dx == 0 and dy == 0):
+        for dx in [-1,0,1]:
+            for dy in [-1,0,1]:
+                # (0,0) is the context piece
+                if dx == 0 and dy == 0:
                     continue
-
+                # we are not concerned with the diagonal neighbors
+                if dx == dy or dx == -dy:
+                    continue
                 xx = x + dx
                 yy = y + dy
-                # print('xx=',xx,'yy=',yy)
-                if 0 <= xx < r_len and 0 <= yy < c_len:
-                    # if there's no neighbor at this coord. skip because we
-                    # don't need to match any edges
-                    if G[xx][yy] == None:
-                        continue
+                if 0 <= xx < dim and 0 <= yy < dim:
+                    matches = set()
+                    orients2 = orientations(Tiles[G[xx][yy]])
+                    for orient1 in orients1:
+                        for orient2 in orients2:
+                            if does_match(orient1, orient2, (dx, dy)):
+                                matches.add(orient1)
 
-                    target_edge_id = target_edges[(dx,dy)]
-                    # assumes data shape (id, rot, flip, edges[])
-                    edges_to_match[target_edge_id] = get_tile_edge(G[xx][yy][3], target_edge_id)
+                    # For the tile in the (x,y) position, we need to determine which
+                    # orientation has a match with all neighboring tiles. We do this
+                    # by going through all the combinations of (x,y) tile and neighbor
+                    # orientations and keeping track of the matches and taking the
+                    # intersection of the sets as we check each neighbor.
+                    orients1 = orients1.intersection(matches)
 
-        if len(edges_to_match) == 0:
-            id = edges.pop(0)
-            G[x][y] = (id, 0, 'n', Edges[id])
-        else:
-            print('edges to match', edges_to_match)
-            for id in edges:
-                if id in used:
-                    continue
+                if len(orients1) == 1:
+                    P[x][y] = next(iter(orients1))
 
-                edge = Edges[id]
-                permutations = get_permutations(edge)
-                match = None
-                for perm in permutations:
-                    perm_edges = permutations[perm]
-                    if 'T' in edges_to_match and perm_edges[2] == edges_to_match['T']:
-                        print('matches bottom of permutation')
-                        match = perm
-                        break
-                    elif 'B' in edges_to_match and perm_edges[0] != edges_to_match['B']:
-                        print('matches top of permutation')
-                        match = perm
-                        break
-                    elif 'L' in edges_to_match and perm_edges[1] != edges_to_match['L']:
-                        print('matches right of permutation')
-                        match = perm
-                        break
-                    elif 'R' in edges_to_match and perm_edges[3] != edges_to_match['R']:
-                        print('matches left of permutation')
-                        print('edge to match=',edges_to_match)
-                        print('permutation edge=', perm_edges[3])
-                        match = perm
-                        break
+print_grid(P)
 
-                if match:
-                    rot, flip = match
-                    # print(f"updating G at {x}, {y}", id, rot, flip)
-                    G[x][y] = (id, rot, flip, edge)
-                    used.add(id)
-                    break
+I = [[None for _ in range(dim)] for _ in range(dim)]
+# Remove the borders and build the image
+for x in range(dim):
+    for y in range(dim):
+        num_rows = len(P[x][y])
+        new_tile = []
+        for i in range(num_rows):
+            # drop the first and last row
+            if i == 0 or i == num_rows - 1:
+                continue
+            new_tile.append(tuple(P[x][y][i][1:-1]))
+        I[x][y] = tuple(new_tile)
 
+print_grid(I, separate=False)
 
-resolved_grid = resolve_grid(G)
-print_grid(resolved_grid)
+# Find the monster
+monster = ['                  # ',
+           '#    ##    ##    ###',
+           ' #  #  #  #  #  #   ']
 
+monster_rel = [
+    (0, 18),
+    (1, 0),(1, 5),(1, 6),(1, 11),(1, 12),(1, 17), (1, 18), (1, 19),
+    (2, 1),(2, 4), (2, 7), (2, 10), (2, 13), (2, 16)
+]
+mx_len = len(monster)
+my_len = len(monster[0])
 
+for oi, orient in enumerate(orientations(I)):
+    print(orient)
+    ir = len(orient)
+    ic = len(orient[0])
 
+    for x in range(ir):
+        for y in range(ic):
+            print(oi,"checking for monsters... x,y=",x,y, ir, ic)
+            print("y_len", my_len, "x_len", mx_len)
+            maybe_monster = set()
+            if y + my_len > ic - 1:
+                continue
+            if x + mx_len > ir - 1:
+                continue
 
+            for rel in monster_rel:
+                dx, dy = rel
+                print(rel)
+                xx = x + dx
+                yy = y + dy
+                if orient[xx][yy] == '#':
+                    print("maybe")
+                    maybe_monster.add((dx,dy))
 
-
-
-            # G[x][y] = ():
-
-
-
-# edge1 = [
-#     '12345',
-#     '56789',
-#     '....9',
-#     '1....'
-# ]
-
-# edge2 = [
-#     '1....',
-#     '.....',
-#     '5....',
-#     '12345'
-# ]
-
-# print_tile(edge1)
-# print('')
-# print_tile(edge2)
-# print('')
-
-# # rot, flip = find_matching_tile_orientation(edge1, 'T', edge2)
-# # print('rot=',rot,'flip=',flip)
-
-# poss = get_permutations(edge2)
-# for p in poss:
-#     print('rot=',p[0], 'flip=',p[1])
-#     print_tile(poss[p])
-#     print('')
+            if len(maybe_monster) == len(monster_rel):
+                print("MONSTER FOUND!")
 
 
-# tile1 = [
-#     '12345',
-#     '....6',
-#     '....7',
-#     '....8',
-#     '....9',
-# ]
-
-# print_full_tile(tile1)
-# print('')
-# xform_tile = rotate_full_tile(tile1, 90)
-# print_full_tile(xform_tile)
-
-# tile2 = [
-#     '1....',
-#     '2....',
-#     '3....',
-#     '4....',
-#     '5....'
-# ]
-
-# print_tile(tile1)
-# print('')
-# print_tile(tile2)
-# print('')
-
-# rot, flip = find_tiles_match(tile1, 'T', tile2)
-# xform_tile = rotate_tile(tile2, rot)
-# if flip != 'n':
-#     xform_tile = flip_tile(xform_tile)
-
-# print_tile(xform_tile)
-
-
-
-
-
-
-
-# def print_grid(grid, empty_char='o'):
-#     dimension = len(grid)
-#     for i in range(dimension):
-#         for k in range(frame_dimension):
-#             line = []
-#             for j in range(dimension):
-#                 if G[i][j] == None:
-#                     line.append(empty_char*frame_dimension)
-#                 else:
-#                     frame_number, rot = G[i][j]
-#                     frame = rotate_frame(get_frame(frame_number), rot)
-#                     line.append(frame[k])
-#             print('\t'.join(line))
-#         print('\n')
-
-
-# print_grid(G, '-')
-# # print('')
 
 
 
